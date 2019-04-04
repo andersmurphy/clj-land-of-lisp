@@ -16,7 +16,6 @@
   (nodes location))
 
 (def wizard-edges
-  ;; Refactored edges to a flat structure closer to the one in the book.
   [{:node        :living-room
     :destination :garden
     :direction   :west

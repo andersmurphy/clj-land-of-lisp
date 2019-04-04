@@ -16,29 +16,32 @@
   (nodes location))
 
 (def edges
-  {:living-room
-   '({:destination :garden
-      :direction   :west
-      :portal      :door}
-     {:destination :attic
-      :direction   :upstairs
-      :portal      :ladder})
-   :garden
-   '({:destination :living-room
-      :direction   :east
-      :portal      :door})
-   :attic
-   '({:destination :living-room
-      :direction   :down-stairs
-      :portal      :ladder})})
+  ;; Refactored edges to a flat structure closer to the one in the book.
+  [{:node        :living-room
+    :destination :garden
+    :direction   :west
+    :portal      :door}
+   {:node        :living-room
+    :destination :attic
+    :direction   :upstairs
+    :portal      :ladder}
+   {:node        :garden
+    :destination :living-room
+    :direction   :east
+    :portal      :door}
+   {:node        :attic
+    :destination :living-room
+    :direction   :down-stairs
+    :portal      :ladder}])
 
 (defn describe-path [{:keys [direction portal]}]
   [:there :is :a portal :going direction :from :here :.])
 
 (defn describe-paths [location edges]
-  (->> (edges location)
+  (->> (group-by :node edges)
+       location
        (map describe-path)
-       (apply concat)))
+       flatten))
 
 (def objects
   [:whiskey :bucket :frog :chain])
@@ -60,7 +63,7 @@
             [:you :see :a obj :on :the :floor :.])]
     (->> (objects-at loc objs obj-loc)
          (map describe-obj)
-         (apply concat))))
+         flatten)))
 
 (def location (atom :living-room))
 
@@ -72,9 +75,9 @@
 
 (defn walk [direction]
   (if-let [{:keys [destination]}
-           (->> (edges @location)
-                (filter #(-> % :direction (= direction)))
-                first)]
+           (-> (group-by (juxt :node :direction) edges)
+               (get [@location direction])
+               first)]
     (do (reset! location destination)
         (look))
     [:you :cannot :go :that :way :.]))
@@ -86,7 +89,7 @@
     [:you :cannot :get :that :.]))
 
 (defn inventory []
-  {:items (objects-at :body objects @object-locations)})
+  (into [:items :-] (objects-at :body objects @object-locations)))
 
 (defn game-read []
   (let [cmd (read-string (str "(" (read-line) ")"))]
